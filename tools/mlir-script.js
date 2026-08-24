@@ -1043,8 +1043,12 @@ const test = async (pattern) => {
 
         'third_party/source/mlir/llvm-project/mlir/test/IR/invalid.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/parser.mlir',
+        'third_party/source/mlir/llvm-project/mlir/test/IR/properties-invalid.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/parser-string-literal-comment.mlir',
+        'third_party/source/mlir/llvm-project/mlir/test/IR/traits.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/zero_whitespace.mlir',
+        'third_party/source/mlir/llvm-project/mlir/test/Target/LLVMIR/nvvm/tcgen05-mma-invalid-ti16.mlir',
+        'third_party/source/mlir/llvm-project/mlir/test/Target/LLVMIR/nvvm/tcgen05-mma-invalid.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/mlir-tblgen/attr-or-type-format.mlir',
         'third_party/source/mlir/mlir-dace/design/mlir/consume.mlir',
         'third_party/source/mlir/mlir-dace/design/mlir/lib.mlir',
@@ -1063,6 +1067,7 @@ const test = async (pattern) => {
         'third_party/source/mlir/shardy/shardy/dialect/sdy/transforms/export/test/executable_partitioner_pipeline/stablehlo_reverse.mlir',
         'third_party/source/mlir/stablehlo/stablehlo/tests/ops_stablehlo.mlir',
         'third_party/source/mlir/stablehlo/stablehlo/tests/print_types_invalid.mlir',
+        'third_party/source/mlir/triton/test/Triton/invalid.mlir',
 
         'third_party/source/mlir/tensorflow/tensorflow/compiler/mlir/quantization/tensorflow/passes/quantized_function_library_tf_drq.mlir',
         'third_party/source/mlir/tensorflow/tensorflow/compiler/mlir/quantization/tensorflow/passes/quantized_function_library_uniform_quantized.mlir',
