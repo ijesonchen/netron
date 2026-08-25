@@ -163,6 +163,8 @@ grapher.Graph = class {
         edgePathGroupDefs.appendChild(marker("arrowhead"));
         edgePathGroupDefs.appendChild(marker("arrowhead-select"));
         edgePathGroupDefs.appendChild(marker("arrowhead-hover"));
+        edgePathGroupDefs.appendChild(marker("arrowhead-input-highlight"));
+        edgePathGroupDefs.appendChild(marker("arrowhead-output-highlight"));
         for (const nodeId of this.nodes.keys()) {
             const entry = this.node(nodeId);
             const node = entry.label;
