@@ -20846,18 +20846,21 @@ _.NVVMDialect = class extends _.Dialect {
             const fragsC = parseMmaOperand('C');
             const scaleAOperands = parseMmaOperand('scaleA');
             const scaleBOperands = parseMmaOperand('scaleB');
-            parser.parseOptionalAttrDict(result.attributes);
-            if (parser.parseOptionalColon()) {
-                const funcType = parser.parseType();
-                if (funcType instanceof _.FunctionType) {
-                    parser.resolveOperands(fragsA, funcType.inputs, result.operands);
-                    parser.resolveOperands(fragsB, funcType.inputs, result.operands);
-                    parser.resolveOperands(fragsC, funcType.inputs, result.operands);
-                    parser.resolveOperands(scaleAOperands, funcType.inputs, result.operands);
-                    parser.resolveOperands(scaleBOperands, funcType.inputs, result.operands);
-                    result.addTypes(funcType.results);
-                }
+            this.parseMmaProperties(parser, result, ['shape', 'multiplicand_a_ptx_type', 'multiplicand_b_ptx_type', 'scale_vec_size', 'block_scale_format', 'kind'], ['shape', 'scaleVecSize', 'blockScaleFormat', 'kind']);
+            parser.parseColon();
+            const funcType = parser.parseType();
+            if (funcType instanceof _.FunctionType === false || funcType.inputs.length !== 3) {
+                parser.emitError('Expected one type for each operand segment');
             }
+            const fragments = [fragsA, fragsB, fragsC];
+            for (let i = 0; i < fragments.length; i++) {
+                parser.resolveOperands(fragments[i], fragments[i].map(() => funcType.inputs[i]), result.operands);
+            }
+            const scaleTypes = [new _.IntegerType('i32'), new _.IntegerType('i16'), new _.IntegerType('i16')];
+            parser.resolveOperands(scaleAOperands, scaleTypes, result.operands);
+            parser.resolveOperands(scaleBOperands, scaleTypes, result.operands);
+            result.addTypes(funcType.results);
+            result.addAttribute('operandSegmentSizes', new _.DenseI32ArrayAttr([...fragments.map((fragment) => fragment.length), 1, 1, 1, 1, 1, 1]));
             return true;
         }
         // Reference: NVVMDialect.cpp - MmaSpBlockScaleOp::parse
@@ -20908,6 +20911,9 @@ _.NVVMDialect = class extends _.Dialect {
                 case 'layout_b': name = 'layoutB'; break;
                 case 'multiplicand_a_ptx_type': name = 'multiplicandAPtxType'; break;
                 case 'multiplicand_b_ptx_type': name = 'multiplicandBPtxType'; break;
+                case 'scale_vec_size': name = 'scaleVecSize'; break;
+                case 'block_scale_format': name = 'blockScaleFormat'; break;
+                case 'kind': name = 'kind'; break;
                 default: break;
             }
             if (result.getAttr(name) !== undefined) {

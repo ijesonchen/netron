@@ -1040,7 +1040,6 @@ const test = async (pattern) => {
         'third_party/source/mlir/llvm-project/mlir/test/IR/invalid-func-op.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/invalid-locations.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/invalid-ops.mlir',
-
         'third_party/source/mlir/llvm-project/mlir/test/IR/invalid.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/parser.mlir',
         'third_party/source/mlir/llvm-project/mlir/test/IR/properties-invalid.mlir',
@@ -1068,7 +1067,6 @@ const test = async (pattern) => {
         'third_party/source/mlir/stablehlo/stablehlo/tests/ops_stablehlo.mlir',
         'third_party/source/mlir/stablehlo/stablehlo/tests/print_types_invalid.mlir',
         'third_party/source/mlir/triton/test/Triton/invalid.mlir',
-
         'third_party/source/mlir/tensorflow/tensorflow/compiler/mlir/quantization/tensorflow/passes/quantized_function_library_tf_drq.mlir',
         'third_party/source/mlir/tensorflow/tensorflow/compiler/mlir/quantization/tensorflow/passes/quantized_function_library_uniform_quantized.mlir',
         'third_party/source/mlir/tensorflow/tensorflow/compiler/mlir/quantization/tensorflow/passes/quantized_function_library_xla_weight_only.mlir',
