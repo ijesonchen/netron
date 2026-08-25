@@ -45,10 +45,19 @@ remain unchanged. Neighborhood colors persist while the graph is zoomed.
 - A large TensorFlow graph with 29,454 logical nodes and 33,995 logical edges
   loads with the feature enabled. Full-graph layout time remains governed by
   Netron's existing layout implementation.
+- The packaged Python build `9.2.2+cjx.20260826` renders that graph and marks
+  one direct input node and edge green and one direct output node and edge red
+  when selecting a node with both relationships.
+- Zooming from `1.0x` to `1.1x` preserves the selected node and all four
+  directional highlight classes.
+- The validation input was normalized from a length-delimited GraphDef wrapper
+  before loading. This is fixture preparation and does not change Netron's
+  model loading behavior.
 
 ## Update Log
 
 | Date | Update |
 | --- | --- |
+| 2026-08-26 | Validated the packaged build on a large TensorFlow graph, including bidirectional coloring and zoom persistence. |
 | 2026-08-26 | Allowed SemVer prerelease and build metadata in Browser and Electron version validation so custom builds such as `9.2.2+cjx.20260826` can start. |
 | 2026-08-26 | Added one-hop directional highlighting, theme-aware colors, zoom persistence coverage, selection cleanup coverage, and the browser test fixture. |
