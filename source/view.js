@@ -1848,6 +1848,7 @@ view.Graph = class extends grapher.Graph {
         this._tensors = new Map();
         this._table = new Map();
         this._selection = new Set();
+        this._neighborhood = [];
         this.blocks = new Set();
         this._zoom = 1;
         this._listeners = {};
@@ -2361,6 +2362,12 @@ view.Graph = class extends grapher.Graph {
     }
 
     clearSelection() {
+        for (const [item, className] of this._neighborhood) {
+            if (item.element) {
+                item.element.classList.remove(className);
+            }
+        }
+        this._neighborhood = [];
         if (this._selection.size > 0) {
             for (const element of this._selection) {
                 element.deselect();
@@ -2386,18 +2393,43 @@ view.Graph = class extends grapher.Graph {
         }
         if (selection) {
             let array = [];
+            const selectedNodes = new Set();
             for (const value of selection) {
                 if (this._table.has(value)) {
                     const element = this._table.get(value);
                     array = array.concat(element.select());
                     this._selection.add(element);
+                    if (element instanceof grapher.Node) {
+                        selectedNodes.add(element);
+                    }
                 }
+            }
+            if (selectedNodes.size === 1) {
+                this._highlightNeighborhood(selectedNodes.values().next().value);
             }
             this.emit('selectionchange', source);
             return array;
         }
         this.emit('selectionchange', source);
         return null;
+    }
+
+    _highlightNeighborhood(node) {
+        const highlight = (item, className) => {
+            if (item && item.element) {
+                item.element.classList.add(className);
+                this._neighborhood.push([item, className]);
+            }
+        };
+        for (const { label: edge } of this.edges.values()) {
+            if (edge.to === node && edge.from !== node) {
+                highlight(edge.from, 'input-highlight');
+                highlight(edge, 'input-highlight');
+            } else if (edge.from === node && edge.to !== node) {
+                highlight(edge.to, 'output-highlight');
+                highlight(edge, 'output-highlight');
+            }
+        }
     }
 
     activate(value, source) {
