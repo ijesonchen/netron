@@ -50,4 +50,5 @@ remain unchanged. Neighborhood colors persist while the graph is zoomed.
 
 | Date | Update |
 | --- | --- |
+| 2026-08-26 | Allowed SemVer prerelease and build metadata in Browser and Electron version validation so custom builds such as `9.2.2+cjx.20260826` can start. |
 | 2026-08-26 | Added one-hop directional highlighting, theme-aware colors, zoom persistence coverage, selection cleanup coverage, and the browser test fixture. |

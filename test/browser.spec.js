@@ -1,9 +1,19 @@
+import * as base from '../source/base.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as playwright from '@playwright/test';
 import * as url from 'url';
 
 playwright.test.setTimeout(120000);
+
+playwright.test('version metadata', () => {
+    for (const version of ['0.0.0', '9.2.2', '9.2.2+cjx.20260826', '9.2.2-rc.1+cjx.20260826']) {
+        playwright.expect(base.Version.isValid(version)).toBeTruthy();
+    }
+    for (const version of [null, '9.2', '9.2.2+', '20260826.cjx', '9.2.2+cjx_20260826']) {
+        playwright.expect(base.Version.isValid(version)).toBeFalsy();
+    }
+});
 
 playwright.test('browser', async ({ page }) => {
 
