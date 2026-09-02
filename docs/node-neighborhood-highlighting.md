@@ -75,6 +75,14 @@ TensorFlow content checks.
 - The packaged Python build `9.2.2+cjx.20260826` renders that graph and marks
   one direct input node and edge green and one direct output node and edge red
   when selecting a node with both relationships.
+- The packaged and system-installed build `9.2.2+cjx.20260902.1` accepts
+  `--parser tf` and directly renders the extensionless EXP-004/A
+  `frozen_graph` as a TensorFlow graph with 1,007 main-graph nodes and two
+  FunctionDef graph entries.
+- Full ESLint, Python syntax, Python server metadata, isolated wheel install,
+  model-factory smoke, and browser rendering checks pass. The repository
+  Playwright tests were not run because their pinned Chromium revision is not
+  installed; browser-tool validation covered the same new loading paths.
 - Zooming from `1.0x` to `1.1x` preserves the selected node and all four
   directional highlight classes.
 - The validation input was normalized from a length-delimited GraphDef wrapper
