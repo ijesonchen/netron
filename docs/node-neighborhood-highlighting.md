@@ -3,7 +3,7 @@
 ## Status
 
 - State: ready for review
-- Last updated: 2026-09-02
+- Last updated: 2026-09-03
 - Maintained branch: `cjxai/dev`
 - Scope: one-hop graph relationship tracing and custom model parser selection
 
@@ -47,6 +47,47 @@ other extensionless formats. This allows TensorFlow `GraphDef` artifacts named
 unrecognized filename extension as binary protobuf while retaining the normal
 TensorFlow content checks.
 
+## Build and Install
+
+The maintained branch stores its custom package version in `package.json`.
+Build the Python wheel from a clean `cjxai/dev` checkout:
+
+```bash
+version=$(python3 -c 'import json; print(json.load(open("package.json"))["version"])')
+python3 package.py build version
+mkdir -p "dist/artifacts/${version}"
+python3 -m pip wheel \
+  --no-deps \
+  --no-build-isolation \
+  --wheel-dir "dist/artifacts/${version}" \
+  ./dist/pypi
+(
+  cd "dist/artifacts/${version}"
+  sha256sum "netron-${version}-py3-none-any.whl" > SHA256SUMS
+  sha256sum -c SHA256SUMS
+)
+```
+
+Replace the system Python package with the verified wheel:
+
+```bash
+python3 -m pip install \
+  --force-reinstall \
+  --no-deps \
+  "dist/artifacts/${version}/netron-${version}-py3-none-any.whl"
+netron --version
+```
+
+An already-running Netron process keeps its loaded code and must be restarted
+by its owner. The wheel is retained outside the task worktree at:
+
+```text
+/root/dev/agent_workspace/tmp/netron-artifacts/node-neighborhood-highlight-d07c6b3b/9.2.2+cjx.20260902.1/
+```
+
+The retained wheel SHA-256 is
+`0f63c5b486074333c65310980c02b0b657da54c605e1fab189cdc249095d3894`.
+
 ## Implementation
 
 | Area | File | Responsibility |
@@ -65,7 +106,8 @@ TensorFlow content checks.
 
 - ESLint passes for the modified JavaScript files.
 - `git diff --check` passes.
-- The focused Playwright browser test reports `1 passed`.
+- The 2026-08-26 focused neighborhood-highlighting Playwright test reported
+  `1 passed`.
 - Manual browser inspection confirms green input nodes and edges, a blue
   selected node, red output nodes and edges, unchanged disconnected nodes, and
   retained colors after zooming.
@@ -85,9 +127,10 @@ TensorFlow content checks.
   installed; browser-tool validation covered the same new loading paths.
 - Zooming from `1.0x` to `1.1x` preserves the selected node and all four
   directional highlight classes.
-- The validation input was normalized from a length-delimited GraphDef wrapper
-  before loading. This is fixture preparation and does not change Netron's
-  model loading behavior.
+- The earlier neighborhood validation input was normalized from a
+  length-delimited GraphDef wrapper before loading. The 2026-09-02 parser
+  validation instead opened the original extensionless `frozen_graph`
+  directly.
 
 ## Update Log
 
