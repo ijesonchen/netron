@@ -1,6 +1,13 @@
 
 const base = {};
 
+base.Version = class {
+
+    static isValid(value) {
+        return typeof value === 'string' && /^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(value);
+    }
+};
+
 base.Complex = class Complex {
 
     constructor(real, imaginary) {
@@ -1429,6 +1436,7 @@ base.Metadata = class {
 };
 
 export const Complex = base.Complex;
+export const Version = base.Version;
 export const BinaryStream = base.BinaryStream;
 export const BinaryReader = base.BinaryReader;
 export const Tensor = base.Tensor;

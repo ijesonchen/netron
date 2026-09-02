@@ -1848,6 +1848,7 @@ view.Graph = class extends grapher.Graph {
         this._tensors = new Map();
         this._table = new Map();
         this._selection = new Set();
+        this._neighborhood = [];
         this.blocks = new Set();
         this._zoom = 1;
         this._listeners = {};
@@ -2361,6 +2362,12 @@ view.Graph = class extends grapher.Graph {
     }
 
     clearSelection() {
+        for (const [item, className] of this._neighborhood) {
+            if (item.element) {
+                item.element.classList.remove(className);
+            }
+        }
+        this._neighborhood = [];
         if (this._selection.size > 0) {
             for (const element of this._selection) {
                 element.deselect();
@@ -2386,18 +2393,43 @@ view.Graph = class extends grapher.Graph {
         }
         if (selection) {
             let array = [];
+            const selectedNodes = new Set();
             for (const value of selection) {
                 if (this._table.has(value)) {
                     const element = this._table.get(value);
                     array = array.concat(element.select());
                     this._selection.add(element);
+                    if (element instanceof grapher.Node) {
+                        selectedNodes.add(element);
+                    }
                 }
+            }
+            if (selectedNodes.size === 1) {
+                this._highlightNeighborhood(selectedNodes.values().next().value);
             }
             this.emit('selectionchange', source);
             return array;
         }
         this.emit('selectionchange', source);
         return null;
+    }
+
+    _highlightNeighborhood(node) {
+        const highlight = (item, className) => {
+            if (item && item.element) {
+                item.element.classList.add(className);
+                this._neighborhood.push([item, className]);
+            }
+        };
+        for (const { label: edge } of this.edges.values()) {
+            if (edge.to === node && edge.from !== node) {
+                highlight(edge.from, 'input-highlight');
+                highlight(edge, 'input-highlight');
+            } else if (edge.from === node && edge.to !== node) {
+                highlight(edge.to, 'output-highlight');
+                highlight(edge, 'output-highlight');
+            }
+        }
     }
 
     activate(value, source) {
@@ -6716,6 +6748,7 @@ view.Context = class {
         this._context = context;
         this._tags = new Map();
         this._content = new Map();
+        this._parser = context.parser || null;
         this._stream = stream || context.stream;
         identifier = typeof identifier === 'string' ? identifier : context.identifier;
         const index = Math.max(identifier.lastIndexOf('/'), identifier.lastIndexOf('\\'));
@@ -6729,6 +6762,10 @@ view.Context = class {
 
     get stream() {
         return this._stream;
+    }
+
+    get parser() {
+        return this._parser;
     }
 
     get container() {
@@ -7833,12 +7870,22 @@ view.ModelFactoryService = class {
         const identifier = context.identifier.toLowerCase().split('/').pop();
         const stream = context.stream;
         if (stream) {
+            if (context.parser) {
+                const module = context.parser.startsWith('./') ? context.parser : `./${context.parser}`;
+                if (!this._factories.some((entry) => entry.module === module)) {
+                    throw new view.Error(`Unsupported parser '${context.parser}'.`);
+                }
+                return [module];
+            }
             const buffer = stream.peek(Math.min(4096, stream.length));
             const content = String.fromCharCode.apply(null, buffer);
             const list = this._factories.filter((entry) =>
                 (typeof entry.extension === 'string' && identifier.endsWith(entry.extension)) ||
                 (entry.extension instanceof RegExp && entry.extension.test(identifier)) ||
                 (entry.content instanceof RegExp && entry.content.test(content)));
+            if (identifier.indexOf('.') === -1 && !list.some((entry) => entry.module === './tf')) {
+                list.unshift({ module: './tf' });
+            }
             return Array.from(new Set(list.map((entry) => entry.module)));
         }
         return [];

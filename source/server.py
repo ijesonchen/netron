@@ -1,6 +1,7 @@
 """ Python Server implementation """
 
 import errno
+import html
 import http.server
 import importlib
 import importlib.metadata
@@ -25,10 +26,12 @@ class _ContentProvider:
     base_dir = ""
     base = ""
     identifier = ""
-    def __init__(self, data, path, file, name):
+    parser = ""
+    def __init__(self, data, path, file, name, parser=None):
         self.data = data if data else bytearray()
         self.identifier = os.path.basename(file) if file else ""
         self.name = name
+        self.parser = parser
         if path:
             self.dir = os.path.dirname(path) if os.path.dirname(path) else "."
             self.base = os.path.basename(path)
@@ -101,6 +104,9 @@ class _HTTPRequestHandler(http.server.BaseHTTPRequestHandler):
                     identifier = self.content.identifier
                     if identifier:
                         meta.append(f'<meta name="identifier" content="{identifier}">')
+                    parser = self.content.parser
+                    if parser:
+                        meta.append(f'<meta name="parser" content="{html.escape(parser, quote=True)}">')
                     meta = "\n".join(meta)
                     regex = r'<meta name="version" content=".*">'
                     content = re.sub(regex, lambda _: meta, content)
@@ -259,7 +265,7 @@ def wait():
     except (KeyboardInterrupt, SystemExit):
         stop()
 
-def serve(file, data=None, address=None, browse=False):
+def serve(file, data=None, address=None, browse=False, parser=None):
     """Start serving model from file or data buffer at address and open in web browser.
 
     Args:
@@ -267,6 +273,7 @@ def serve(file, data=None, address=None, browse=False):
         data (bytes): Model data to serve. None will load data from file.
         address (tuple, optional): A (host, port) tuple, or a port number.
         browse (bool, optional): Launch web browser. Default: True
+        parser (string, optional): Model parser name, for example 'tf'.
 
     Returns:
         A (host, port) address tuple.
@@ -277,7 +284,10 @@ def serve(file, data=None, address=None, browse=False):
     if not data and file and not os.path.exists(file):
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), file)
 
-    content = _ContentProvider(data, file, file, file)
+    if parser is not None and not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", parser):
+        raise ValueError(f"Invalid parser '{parser}'.")
+
+    content = _ContentProvider(data, file, file, file, parser)
 
     if data and not isinstance(data, bytearray) and isinstance(data.__class__, type):
         logger.info("Experimental")
@@ -303,18 +313,19 @@ def serve(file, data=None, address=None, browse=False):
 
     return address
 
-def start(file=None, address=None, browse=True):
+def start(file=None, address=None, browse=True, parser=None):
     """Start serving model file at address and open in web browser.
 
     Args:
         file (string): Model file to serve.
         browse (bool, optional): Launch web browser, Default: True
         address (tuple, optional): A (host, port) tuple, or a port number.
+        parser (string, optional): Model parser name, for example 'tf'.
 
     Returns:
         A (host, port) address tuple.
     """
-    return serve(file, None, browse=browse, address=address)
+    return serve(file, None, browse=browse, address=address, parser=parser)
 
 def widget(address, height=800):
     """ Open address as Jupyter Notebook IFrame.

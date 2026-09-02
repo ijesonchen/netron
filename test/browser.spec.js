@@ -1,9 +1,69 @@
+import * as base from '../source/base.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as playwright from '@playwright/test';
 import * as url from 'url';
+import { Buffer } from 'node:buffer';
 
 playwright.test.setTimeout(120000);
+
+playwright.test('version metadata', () => {
+    for (const version of ['0.0.0', '9.2.2', '9.2.2+cjx.20260826', '9.2.2-rc.1+cjx.20260826']) {
+        playwright.expect(base.Version.isValid(version)).toBeTruthy();
+    }
+    for (const version of [null, '9.2', '9.2.2+', '20260826.cjx', '9.2.2+cjx_20260826']) {
+        playwright.expect(base.Version.isValid(version)).toBeFalsy();
+    }
+});
+
+playwright.test('extensionless TensorFlow GraphDef', async ({ page }) => {
+
+    const graph = Buffer.from([
+        0x0a, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x0b,
+        0x50, 0x6c, 0x61, 0x63, 0x65, 0x68, 0x6f, 0x6c, 0x64, 0x65, 0x72,
+        0x18, 0x01
+    ]);
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('body.welcome', { timeout: 25000 });
+
+    const consent = page.locator('#message-button');
+    if (await consent.isVisible()) {
+        await consent.click();
+    }
+
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('.open-file-button, button:has-text("Open Model")').click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles({
+        name: 'frozen_graph',
+        mimeType: 'application/octet-stream',
+        buffer: graph
+    });
+
+    await page.waitForSelector('body.default', { timeout: 10000 });
+    await playwright.expect(page.locator('#node-name-input')).toHaveCount(1);
+});
+
+playwright.test('forced TensorFlow parser', async ({ page }) => {
+
+    const graph = Buffer.from([
+        0x0a, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x0b,
+        0x50, 0x6c, 0x61, 0x63, 0x65, 0x68, 0x6f, 0x6c, 0x64, 0x65, 0x72,
+        0x18, 0x01
+    ]);
+    const source = encodeURIComponent(`data:application/octet-stream;base64,${graph.toString('base64')}`);
+
+    await page.goto(`/?url=${source}&identifier=model.bin&parser=tf`);
+    const consent = page.locator('#message-button');
+    if (await consent.isVisible()) {
+        await consent.click();
+    }
+
+    await page.waitForSelector('body.default', { timeout: 10000 });
+    await playwright.expect(page.locator('#node-name-input')).toHaveCount(1);
+});
 
 playwright.test('browser', async ({ page }) => {
 
@@ -66,4 +126,61 @@ playwright.test('browser', async ({ page }) => {
     playwright.expect(match).not.toBeNull();
     const first = parseFloat(match[0]);
     playwright.expect(first).toBe(0.1353299617767334);
+});
+
+playwright.test('node neighborhood highlighting', async ({ page }) => {
+
+    const self = url.fileURLToPath(import.meta.url);
+    const dir = path.dirname(self);
+    const file = path.resolve(dir, 'neighborhood.dot');
+    playwright.expect(fs.existsSync(file)).toBeTruthy();
+    await page.emulateMedia({ colorScheme: 'light' });
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('body.welcome', { timeout: 25000 });
+
+    const consent = page.locator('#message-button');
+    if (await consent.isVisible()) {
+        await consent.click();
+    }
+
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('.open-file-button, button:has-text("Open Model")').click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(file);
+    await page.waitForSelector('body.default', { timeout: 10000 });
+
+    await page.locator('#node-name-selected .node-item-type').click();
+
+    await playwright.expect(page.locator('#node-name-selected')).toHaveClass(/\bselect\b/);
+    await playwright.expect(page.locator('#node-name-upstream')).toHaveClass(/\binput-highlight\b/);
+    await playwright.expect(page.locator('#node-name-downstream')).toHaveClass(/\boutput-highlight\b/);
+    await playwright.expect(page.locator('#node-name-branch')).toHaveClass(/\boutput-highlight\b/);
+    await playwright.expect(page.locator('#node-name-disconnected')).not.toHaveClass(/\b(input|output)-highlight\b/);
+
+    const inputEdges = page.locator('.edge-path.input-highlight');
+    const outputEdges = page.locator('.edge-path.output-highlight');
+    await playwright.expect(inputEdges).toHaveCount(1);
+    await playwright.expect(outputEdges).toHaveCount(2);
+    await playwright.expect(page.locator('#node-name-upstream > .node-border')).toHaveCSS('stroke', 'rgb(0, 138, 59)');
+    await playwright.expect(page.locator('#node-name-selected > .node-border')).toHaveCSS('stroke', 'rgb(37, 99, 235)');
+    await playwright.expect(page.locator('#node-name-downstream > .node-border')).toHaveCSS('stroke', 'rgb(211, 47, 47)');
+    await playwright.expect(inputEdges).toHaveCSS('marker-end', /arrowhead-input-highlight/);
+    await playwright.expect(outputEdges.first()).toHaveCSS('marker-end', /arrowhead-output-highlight/);
+
+    const canvas = page.locator('#canvas');
+    const style = await canvas.getAttribute('style');
+    await page.locator('#zoom-in-button').click();
+    await playwright.expect.poll(async () => await canvas.getAttribute('style')).not.toBe(style);
+    await playwright.expect(inputEdges).toHaveCount(1);
+    await playwright.expect(outputEdges).toHaveCount(2);
+
+    await page.locator('#node-name-downstream .node-item-type').click();
+    await playwright.expect(page.locator('#node-name-upstream')).not.toHaveClass(/\binput-highlight\b/);
+    await playwright.expect(page.locator('#node-name-selected')).toHaveClass(/\binput-highlight\b/);
+    await playwright.expect(page.locator('#node-name-branch')).not.toHaveClass(/\boutput-highlight\b/);
+    await playwright.expect(page.locator('#node-name-downstream > .node-border')).toHaveCSS('stroke', 'rgb(37, 99, 235)');
+    await playwright.expect(inputEdges).toHaveCount(1);
+    await playwright.expect(outputEdges).toHaveCount(0);
 });

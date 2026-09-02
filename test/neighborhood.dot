@@ -1,0 +1,6 @@
+digraph neighborhood {
+    upstream -> selected;
+    selected -> downstream;
+    selected -> branch;
+    disconnected;
+}
