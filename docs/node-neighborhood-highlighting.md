@@ -3,8 +3,9 @@
 ## Status
 
 - State: ready for review
-- Last updated: 2026-08-26
-- Scope: one-hop graph relationship tracing
+- Last updated: 2026-09-02
+- Maintained branch: `cjxai/dev`
+- Scope: one-hop graph relationship tracing and custom model parser selection
 
 ## Behavior
 
@@ -24,10 +25,36 @@ predictable and avoids coloring an entire large graph.
 Zooming, panning, edge hover, sidebars, and the existing graph layout behavior
 remain unchanged. Neighborhood colors persist while the graph is zoomed.
 
+## Parser Selection
+
+The Python CLI and API accept an optional parser name:
+
+```bash
+netron --parser tf /path/to/model
+```
+
+```python
+netron.start("/path/to/model", parser="tf")
+```
+
+The browser URL form also accepts `parser=tf`. A forced parser is the only
+model factory considered for the top-level file. Unknown parser names fail
+without attempting a dynamic module import.
+
+Files without an extension are tried as TensorFlow binary protobuf before
+other extensionless formats. This allows TensorFlow `GraphDef` artifacts named
+`frozen_graph` to open directly. Explicit `--parser tf` also treats an
+unrecognized filename extension as binary protobuf while retaining the normal
+TensorFlow content checks.
+
 ## Implementation
 
 | Area | File | Responsibility |
 | --- | --- | --- |
+| Python parser option | `source/__init__.py`, `source/server.py` | Exposes `--parser` and transfers the selected parser to the browser. |
+| Parser routing | `source/browser.js`, `source/view.js` | Carries the parser through the load context and limits factory selection. |
+| Extensionless GraphDef | `source/tf.js` | Applies TensorFlow binary protobuf detection to extensionless files. |
+| Parser regressions | `test/parser.py`, `test/browser.spec.js` | Covers parser metadata, validation, forced selection, and extensionless GraphDef rendering. |
 | Selection state | `source/view.js` | Finds incoming and outgoing rendered edges, applies directional classes, and clears stale highlights. |
 | SVG markers | `source/grapher.js` | Defines separate arrowheads for input and output highlights. |
 | Visual styles | `source/grapher.css` | Defines green input, blue selection, and red output styles for light and dark themes. |
@@ -58,6 +85,7 @@ remain unchanged. Neighborhood colors persist while the graph is zoomed.
 
 | Date | Update |
 | --- | --- |
+| 2026-09-02 | Added explicit parser selection and direct TensorFlow GraphDef detection for extensionless files such as `frozen_graph`; moved the maintained custom build branch to `cjxai/dev`. |
 | 2026-08-26 | Distinguished the selected node with a thicker blue border and aligned directional styles across light, dark, and nested graph views. |
 | 2026-08-26 | Validated the packaged build on a large TensorFlow graph, including bidirectional coloring and zoom persistence. |
 | 2026-08-26 | Allowed SemVer prerelease and build metadata in Browser and Electron version validation so custom builds such as `9.2.2+cjx.20260826` can start. |

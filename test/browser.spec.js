@@ -15,6 +15,55 @@ playwright.test('version metadata', () => {
     }
 });
 
+playwright.test('extensionless TensorFlow GraphDef', async ({ page }) => {
+
+    const graph = Buffer.from([
+        0x0a, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x0b,
+        0x50, 0x6c, 0x61, 0x63, 0x65, 0x68, 0x6f, 0x6c, 0x64, 0x65, 0x72,
+        0x18, 0x01
+    ]);
+
+    await page.goto('/');
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForSelector('body.welcome', { timeout: 25000 });
+
+    const consent = page.locator('#message-button');
+    if (await consent.isVisible()) {
+        await consent.click();
+    }
+
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('.open-file-button, button:has-text("Open Model")').click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles({
+        name: 'frozen_graph',
+        mimeType: 'application/octet-stream',
+        buffer: graph
+    });
+
+    await page.waitForSelector('body.default', { timeout: 10000 });
+    await playwright.expect(page.locator('#node-name-input')).toHaveCount(1);
+});
+
+playwright.test('forced TensorFlow parser', async ({ page }) => {
+
+    const graph = Buffer.from([
+        0x0a, 0x14, 0x0a, 0x05, 0x69, 0x6e, 0x70, 0x75, 0x74, 0x12, 0x0b,
+        0x50, 0x6c, 0x61, 0x63, 0x65, 0x68, 0x6f, 0x6c, 0x64, 0x65, 0x72,
+        0x18, 0x01
+    ]);
+    const source = encodeURIComponent(`data:application/octet-stream;base64,${graph.toString('base64')}`);
+
+    await page.goto(`/?url=${source}&identifier=model.bin&parser=tf`);
+    const consent = page.locator('#message-button');
+    if (await consent.isVisible()) {
+        await consent.click();
+    }
+
+    await page.waitForSelector('body.default', { timeout: 10000 });
+    await playwright.expect(page.locator('#node-name-input')).toHaveCount(1);
+});
+
 playwright.test('browser', async ({ page }) => {
 
     const self = url.fileURLToPath(import.meta.url);

@@ -11,7 +11,11 @@ tf.ModelFactory = class {
 
     async match(context) {
         const identifier = context.identifier;
-        const extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
+        let extension = identifier.lastIndexOf('.') > 0 ? identifier.split('.').pop().toLowerCase() : '';
+        const extensions = ['pb', 'pbtxt', 'prototxt', 'pt', 'txt', 'graphdef', 'meta', 'json', 'index', 'ckpt', 'pbmm'];
+        if (extension === '' || (context.parser === 'tf' && !extensions.includes(extension))) {
+            extension = 'pb';
+        }
         if (extension === 'pbtxt' || extension === 'prototxt' || extension === 'pt' || extension === 'txt') {
             if (identifier.endsWith('predict_net.pbtxt') || identifier.endsWith('predict_net.prototxt') ||
                 identifier.endsWith('init_net.pbtxt') || identifier.endsWith('init_net.prototxt')) {

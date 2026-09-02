@@ -20,6 +20,8 @@ def main():
     parser.add_argument("-p", "--port", help="port to serve", type=int)
     parser.add_argument("--host",
         metavar="ADDR", help="host to serve", default="localhost")
+    parser.add_argument("--parser",
+        metavar="NAME", help="force model parser (for example, tf)")
     parser.add_argument("--verbosity",
         metavar="LEVEL", help="log verbosity (quiet, default, debug)",
         choices=[ "quiet", "debug", "default" ], default="default")
@@ -39,7 +41,7 @@ def main():
         logger.info(__version__)
         sys.exit(0)
     address = (args.host, args.port) if args.host else args.port if args.port else None
-    start(args.file, address=address, browse=args.browse)
+    start(args.file, address=address, browse=args.browse, parser=args.parser)
     wait()
     sys.exit(0)
 

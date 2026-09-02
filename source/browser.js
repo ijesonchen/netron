@@ -147,10 +147,11 @@ browser.Host = class {
     async start() {
         if (this._meta.file) {
             const [url] = this._meta.file;
-            if (this._view.accept(url)) {
+            const parser = Array.isArray(this._meta.parser) && this._meta.parser.length === 1 ? this._meta.parser[0] : null;
+            if (parser || this._view.accept(url)) {
                 const identifier = Array.isArray(this._meta.identifier) && this._meta.identifier.length === 1 ? this._meta.identifier[0] : null;
                 const name = this._meta.name || null;
-                const status = await this._openModel(this._url(url), identifier || null, name);
+                const status = await this._openModel(this._url(url), identifier || null, name, parser);
                 if (status === '') {
                     return;
                 }
@@ -164,12 +165,13 @@ browser.Host = class {
         const url = hash ? hash : params.get('url');
         if (url) {
             const identifier = params.get('identifier') || null;
+            const parser = params.get('parser') || null;
             const location = url
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/blob\/([\w/\-_.]*)(\?raw=true)?$/, 'https://raw.githubusercontent.com/$1/$2')
                 .replace(/^https:\/\/github\.com\/([\w-]*\/[\w-]*)\/raw\/([\w/\-_.]*)$/, 'https://raw.githubusercontent.com/$1/$2')
                 .replace(/^https:\/\/huggingface.co\/(.*)\/blob\/(.*)$/, 'https://huggingface.co/$1/resolve/$2');
-            if (this._view.accept(identifier || location) && location.indexOf('*') === -1) {
-                const status = await this._openModel(location, identifier);
+            if ((parser || this._view.accept(identifier || location)) && location.indexOf('*') === -1) {
+                const status = await this._openModel(location, identifier, null, parser);
                 if (status === '') {
                     return;
                 }
@@ -435,7 +437,7 @@ browser.Host = class {
         return `${location.protocol}//${location.host}${pathname}${file}`;
     }
 
-    async _openModel(url, identifier, name) {
+    async _openModel(url, identifier, name, parser) {
         this._view.show('welcome spinner');
         let context = null;
         try {
@@ -451,7 +453,7 @@ browser.Host = class {
                     stream = await this._fetch(url, null, null, progress);
                 }
             }
-            context = new browser.Context(this, url, identifier, name, stream);
+            context = new browser.Context(this, url, identifier, name, stream, parser);
             this._telemetry.set('session_engaged', 1);
         } catch (error) {
             await this._view.error(error, 'Model load request failed.');
@@ -831,9 +833,10 @@ browser.FileStream = class {
 
 browser.Context = class {
 
-    constructor(host, url, identifier, name, stream) {
+    constructor(host, url, identifier, name, stream, parser) {
         this._host = host;
         this._name = name;
+        this._parser = parser;
         this._stream = stream;
         const parts = url.split('?')[0].split('/');
         this._identifier = parts.pop();
@@ -849,6 +852,10 @@ browser.Context = class {
 
     get name() {
         return this._name;
+    }
+
+    get parser() {
+        return this._parser;
     }
 
     get stream() {
