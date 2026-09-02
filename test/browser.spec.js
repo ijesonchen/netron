@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as playwright from '@playwright/test';
 import * as url from 'url';
+import { Buffer } from 'node:buffer';
 
 playwright.test.setTimeout(120000);
 
